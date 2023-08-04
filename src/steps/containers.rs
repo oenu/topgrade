@@ -10,7 +10,7 @@ use tracing::{debug, error, warn};
 use crate::command::CommandExt;
 use crate::error::{self, TopgradeError};
 use crate::terminal::print_separator;
-use crate::{execution_context::ExecutionContext, utils::require};
+use crate::{execution_context::ExecutionContext, utils::require, utils::require_with_string};
 
 // A string found in the output of docker for containers that weren't found in
 // the docker registry. We use this to gracefully handle and skip containers
@@ -104,7 +104,8 @@ fn list_containers(crt: &Path) -> Result<Vec<Container>> {
 
 pub fn run_containers(ctx: &ExecutionContext) -> Result<()> {
     // Prefer podman, fall back to docker if not present
-    let crt = require("podman").or_else(|_| require("docker"))?;
+    let crt = require("podman").or_else(|_| require_with_string("docker", "Usage:  docker [OPTIONS] COMMAND"))?;
+
     debug!("Using container runtime '{}'", crt.display());
 
     print_separator("Containers");
