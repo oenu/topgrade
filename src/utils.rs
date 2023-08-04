@@ -95,6 +95,28 @@ pub fn require<T: AsRef<OsStr> + Debug>(binary_name: T) -> Result<PathBuf> {
     }
 }
 
+pub fn require_with_string<T: AsRef<OsStr> + Debug>(binary_name: T, check_string: &str) -> Result<PathBuf> {
+    match which_crate::which(&binary_name) {
+        Ok(path) => {
+            debug!("Detected {:?} as {:?}", &path, &binary_name);
+            let output = Command::new(&path).output()?;
+            if String::from_utf8_lossy(&output.stdout).contains(check_string) {
+                Ok(path)
+            } else {
+                Err(SkipStep(format!("Cannot find {:?} in PATH", &binary_name)).into())
+            }
+        }
+        Err(e) => match e {
+            which_crate::Error::CannotFindBinaryPath => {
+                Err(SkipStep(format!("Cannot find {:?} in PATH", &binary_name)).into())
+            }
+            _ => {
+                panic!("Detecting {:?} failed: {}", &binary_name, e);
+            }
+        },
+    }
+}
+
 #[allow(dead_code)]
 pub fn require_option<T>(option: Option<T>, cause: String) -> Result<T> {
     if let Some(value) = option {
